@@ -29,7 +29,7 @@ public class RedisLock {
 		return this.lockKey;
 	}
 
-	public boolean acquire() throws InterruptedException {
+	public synchronized boolean acquire() throws InterruptedException {
 		long timeout = this.timeoutMsecs;
 		while (timeout >= 0) {
 			String code = jedis.set(lockKey, "L", "NX", "PX", expireMsecs);
