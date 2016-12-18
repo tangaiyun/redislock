@@ -6,6 +6,7 @@ import redis.clients.jedis.Jedis;
 
 /**
  * @author Aiyun Tang
+ * email: aiyun.tang@gmail.com
  */
 public class RedisLock {
 
