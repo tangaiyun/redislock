@@ -75,8 +75,6 @@ public class RedisLock {
 	@Override
 	protected void finalize() throws Throwable {
 		lockAcquiredThreadLocal.remove();
-		jedis.del(lockKey);
-		jedis.close();
 		super.finalize();
 	}
 }
