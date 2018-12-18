@@ -36,6 +36,9 @@ public class RedisLock {
 	}
 
 	public boolean acquire() throws InterruptedException {
+		if(lockAcquiredThreadLocal.get()) {
+			return true;
+		}
 		if(isReleased.get()) {
 			throw new RuntimeException("This lock instance with lockkey: " + lockKey + " was released, it can not been used again.");
 		}
