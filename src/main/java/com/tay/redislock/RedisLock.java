@@ -10,9 +10,8 @@ import redis.clients.jedis.Jedis;
  */
 public class RedisLock {
 
-	private AtomicBoolean isacquired = new AtomicBoolean();;
+	private AtomicBoolean isacquired = new AtomicBoolean();
 	private AtomicBoolean isReleased = new AtomicBoolean();
-	private AtomicBoolean isLocked = new AtomicBoolean();	
 	private static ThreadLocal<Boolean> lockAcquiredThreadLocal = new ThreadLocal<Boolean>(); 
 	private Jedis jedis;
 	private String lockKey;
@@ -22,7 +21,6 @@ public class RedisLock {
 	public RedisLock(Jedis jedis, String lockKey) {
 		this.jedis = jedis;
 		this.lockKey = lockKey;
-		this.isLocked.set(false);
 	}
 
 	public RedisLock(Jedis jedis, String lockKey, int timeoutMsecs, int expireMsecs) {
@@ -42,16 +40,12 @@ public class RedisLock {
 		if(lockAcquiredThreadLocal.get()) {
 			return true;
 		}
-		if(isacquired.get()) {
-			throw new RuntimeException("This lock instance with lockkey: " + lockKey+ " was acquired, it can not been used again.");
-		}
 		if(isacquired.getAndSet(true) == false)
 		{
 			long timeout = this.timeoutMsecs;
 			while (timeout >= 0) {
 				String code = jedis.set(lockKey, "L", "NX", "PX", expireMsecs);
 				if ("OK".equals(code)) {
-					isLocked.set(true);
 					lockAcquiredThreadLocal.set(true);
 					return true;
 				}
@@ -63,13 +57,12 @@ public class RedisLock {
 	}
 
 	public void release() {
-		if(isLocked.get() && !lockAcquiredThreadLocal.get()) {
+		if(!lockAcquiredThreadLocal.get()) {
 			throw new RuntimeException("This lock instance with lockkey: " + lockKey + " should been released by the lock acquired thread.");
 		}
-		if (isLocked.get() && lockAcquiredThreadLocal.get()) {
+		else{
 			isReleased.set(true); 
 			jedis.del(lockKey);
-			isLocked.set(false);
 			lockAcquiredThreadLocal.remove();
 			jedis.close();
 		}
