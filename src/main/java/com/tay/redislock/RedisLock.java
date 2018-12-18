@@ -13,7 +13,7 @@ public class RedisLock {
 	private AtomicBoolean isacquired = new AtomicBoolean();;
 	private AtomicBoolean isReleased = new AtomicBoolean();
 	private AtomicBoolean isLocked = new AtomicBoolean();	
-	private ThreadLocal<Boolean> lockAcquiredThreadLocal = new ThreadLocal<Boolean>(); 
+	private static ThreadLocal<Boolean> lockAcquiredThreadLocal = new ThreadLocal<Boolean>(); 
 	private Jedis jedis;
 	private String lockKey;
 	private long timeoutMsecs = 10 * 1000;
