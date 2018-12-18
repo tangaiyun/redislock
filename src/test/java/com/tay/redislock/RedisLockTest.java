@@ -12,7 +12,7 @@ import org.junit.Test;
 import redis.clients.jedis.Jedis;
 
 public class RedisLockTest {
-	Jedis jedis = new Jedis("192.168.30.118");
+	Jedis jedis = new Jedis("192.168.31.119");
 	@Test
 	public void testLock() throws InterruptedException {
 		String testLockKey = "testLockKey1";
@@ -31,6 +31,21 @@ public class RedisLockTest {
 		Thread.sleep(6100);
 		Assert.assertNull(jedis.get(testLockKey));
 	}
+	
+	@Test
+	public void testLockDestroy() throws InterruptedException {
+		String testLockKey = "testLockDestroy";
+		RedisLock rlock = new RedisLock(jedis, testLockKey, 10000, 6000);
+		Assert.assertTrue(rlock.acquire());
+		rlock.destroy();
+		try {
+			rlock.acquire();
+		}
+		catch(RuntimeException e) {
+			Assert.assertEquals(e.getMessage(), "This lock was destroyed, so you can use it again!");
+		}
+	}
+
 
 	@Test
 	public void testLock2() throws InterruptedException, ExecutionException {
@@ -59,7 +74,7 @@ public class RedisLockTest {
 				return null;
 			}
 		});
-		Assert.assertFalse(f2.get());
+		Assert.assertTrue(f2.get());
 		System.out.println(jedis.pttl(testLockKey));
 	}
 
@@ -82,12 +97,8 @@ public class RedisLockTest {
 			@Override
 			public Boolean apply(Boolean b) {
 				try {
-					System.out.println("Thread1 lock acquire:" + b);
-					long t1 = System.currentTimeMillis();
+				
 					boolean bool = rlock.acquire();
-					System.out.println("Thread2 acquire:" + b);
-					long t2 = System.currentTimeMillis();
-					System.out.println(t2 - t1);
 					return bool;
 
 				} catch (Exception e) {
@@ -97,16 +108,14 @@ public class RedisLockTest {
 				return null;
 			}
 		}), executor);
-		System.out.println(f2.get());
 		Assert.assertTrue(f2.get());
-		System.out.println(jedis.pttl(testLockKey));
 	}
 
 	
 	@Test
 	public void testLock6() throws InterruptedException, ExecutionException {
 		String testLockKey = "testLockKey6";
-		RedisLock rlock = new RedisLock(jedis, testLockKey, 5000, 3000);
+		RedisLock rlock = new RedisLock(jedis, testLockKey, 3000, 6000);
 		ExecutorService executor = Executors.newFixedThreadPool(5);
 		CompletableFuture<Boolean> f1 = CompletableFuture.supplyAsync(() -> {
 			try {
@@ -125,12 +134,7 @@ public class RedisLockTest {
 			@Override
 			public Boolean apply(Boolean b) {
 				try {
-					System.out.println("Thread1 lock acquire:" + b);
-					long t1 = System.currentTimeMillis();
 					boolean bool = rlock.acquire();
-					System.out.println("Thread2 acquire:" + b);
-					long t2 = System.currentTimeMillis();
-					System.out.println(t2 - t1);
 					return bool;
 
 				} catch (Exception e) {
@@ -140,9 +144,6 @@ public class RedisLockTest {
 				return null;
 			}
 		}), executor);
-		System.out.println(f2.get());
-		Assert.assertTrue(f2.get());
-		Thread.sleep(10000);
-		System.out.println(jedis.get(testLockKey));
+		Assert.assertFalse(f2.get());
 	}
 }
